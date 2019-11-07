@@ -11,6 +11,10 @@ export default class Main extends Component {
     newRepo: '',
     repositories: [],
     loading: false,
+    error: {
+      status: false,
+      message: '',
+    },
   };
 
   // carregar os dados do localStorage
@@ -31,29 +35,46 @@ export default class Main extends Component {
   }
 
   handleInputChange = e => {
-    this.setState({ newRepo: e.target.value });
+    this.setState({
+      newRepo: e.target.value,
+      error: { status: false, message: '' },
+    });
   };
 
   handleSubmit = async e => {
     e.preventDefault();
 
-    this.setState({ loading: true });
-    const { newRepo, repositories } = this.state;
-    const response = await api.get(`/repos/${newRepo}`);
+    this.setState({ loading: true, error: { status: false, message: '' } });
+    try {
+      const { newRepo, repositories } = this.state;
+      if (newRepo === '')
+        throw new Error("It's necessary fill at least one repository");
 
-    const data = {
-      name: response.data.full_name,
-    };
+      const hasRepo = repositories.find(
+        r => r.name.toLowerCase() === newRepo.toLowerCase()
+      );
 
-    this.setState({
-      repositories: [...repositories, data],
-      newRepo: '',
-      loading: false,
-    });
+      if (hasRepo) throw new Error('Repository already informed');
+
+      const response = await api.get(`/repos/${newRepo}`);
+
+      const data = {
+        name: response.data.full_name,
+      };
+
+      this.setState({
+        repositories: [...repositories, data],
+        newRepo: '',
+      });
+    } catch (error) {
+      this.setState({ error: { status: true, message: error } });
+    } finally {
+      this.setState({ loading: false });
+    }
   };
 
   render() {
-    const { newRepo, repositories, loading } = this.state;
+    const { newRepo, repositories, loading, error } = this.state;
 
     return (
       <Container>
@@ -61,10 +82,10 @@ export default class Main extends Component {
           <FaGithubAlt />
           Repositories
         </h1>
-        <Form onSubmit={this.handleSubmit}>
+        <Form onSubmit={this.handleSubmit} error={error}>
           <input
             type="text"
-            placeholder="Add repository"
+            placeholder={error.status ? error.message : 'Add repository'}
             value={newRepo}
             onChange={this.handleInputChange}
           />
