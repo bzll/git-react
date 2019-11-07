@@ -67,7 +67,7 @@ export default class Main extends Component {
         newRepo: '',
       });
     } catch (error) {
-      this.setState({ error: { status: true, message: error } });
+      this.setState({ error: { status: true, message: error.message } });
     } finally {
       this.setState({ loading: false });
     }
